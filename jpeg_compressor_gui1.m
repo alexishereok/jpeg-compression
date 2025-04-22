@@ -2,50 +2,49 @@ function jpeg_compressor_gui1
 % JPEG Compressor GUI in MATLAB
 % Mimics Python/Tkinter app: select image, YCbCr split, chroma down/up, block DCT+quant, save as JPEG.
 
-    %--- Config ---    
-    outputDir = 'C:\Users\Nikhil Jindal\OneDrive\Desktop\FILES';
-    if ~exist(outputDir, 'dir')
-        mkdir(outputDir);
-    end
+%--- Config ---
+outputDir = 'C:\Users\Nikhil Jindal\OneDrive\Desktop\FILES';
+if ~exist(outputDir, 'dir')
+    mkdir(outputDir);
+end
 
-    %--- State ---    
-    img = [];
-    filePath = '';
-    quality = 75; % Default quality
-    
-    %--- Build GUI ---    
-    hFig = figure('Name', 'JPEG Compressor', ...
-                  'Position', [100 100 600 650], ...
-                  'Resize', 'off', ...
-                  'MenuBar', 'none', ...
-                  'ToolBar', 'none', ...
-                  'Color', [0.9 0.9 0.9]);
+%--- State ---
+img = [];
+filePath = '';
 
-    % Title Text
-    uicontrol(hFig, 'Style', 'text', 'String', 'JPEG Compressor','Position', [200 580 200 30], 'FontSize', 16,'FontWeight', 'bold', 'HorizontalAlignment', 'center');
-    
-    % Select Image button
-    uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Select Image','Position', [50 520 150 40], 'FontSize', 12, 'BackgroundColor', [0.3 0.6 0.3],'Callback', @selectImage);
+%--- Build GUI ---
+hFig = figure('Name', 'JPEG Compressor', ...
+    'Position', [100 100 600 650], ...
+    'Resize', 'off', ...
+    'MenuBar', 'none', ...
+    'ToolBar', 'none', ...
+    'Color', [0.9 0.9 0.9]);
 
-    % Axes for image preview
-    hAx = axes('Parent', hFig, 'Units', 'pixels', 'Position', [100 250 400 250]);
-    axis(hAx, 'off');
+% Title Text
+uicontrol(hFig, 'Style', 'text', 'String', 'JPEG Compressor','Position', [200 580 200 30], 'FontSize', 16,'FontWeight', 'bold', 'HorizontalAlignment', 'center');
 
-    % Status text
-    hTxtStatus = uicontrol(hFig, 'Style', 'text', 'String', 'No image selected','Position', [100 220 400 20], 'ForegroundColor', [1 0 0],'HorizontalAlignment', 'center', 'FontSize', 12);
+% Select Image button
+uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Select Image','Position', [50 520 150 40], 'FontSize', 12, 'BackgroundColor', [0.3 0.6 0.3],'Callback', @selectImage);
 
-    % Compress buttons
-    uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Upsample + Compress','Position', [50 150 200 40], 'FontSize', 12, 'BackgroundColor', [0.3 0.6 0.9],'Callback', @(~, ~) compressImage('upsample'));
-    uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Downsample + Compress','Position', [350 150 200 40], 'FontSize', 12, 'BackgroundColor', [0.9 0.6 0.3],'Callback', @(~, ~) compressImage('downsample'));
+% Axes for image preview
+hAx = axes('Parent', hFig, 'Units', 'pixels', 'Position', [100 250 400 250]);
+axis(hAx, 'off');
 
-    % Exit button
-    uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Exit','Position', [150 60 300 40], 'FontSize', 12, 'BackgroundColor', [0.7 0.3 0.3],'Callback', @(src, evt) close(hFig));
+% Status text
+hTxtStatus = uicontrol(hFig, 'Style', 'text', 'String', 'No image selected','Position', [100 220 400 20], 'ForegroundColor', [1 0 0],'HorizontalAlignment', 'center', 'FontSize', 12);
 
-    % Help button
-    uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Help', ...
-              'Position', [450 520 100 40], 'FontSize', 12, 'BackgroundColor', [0.6 0.6 0.6],'Callback', @showHelp);
-    
-    %--- Nested Functions ---
+% Compress buttons
+uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Upsample + Compress','Position', [50 150 200 40], 'FontSize', 12, 'BackgroundColor', [0.3 0.6 0.9],'Callback', @(~, ~) compressImage('upsample'));
+uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Downsample + Compress','Position', [350 150 200 40], 'FontSize', 12, 'BackgroundColor', [0.9 0.6 0.3],'Callback', @(~, ~) compressImage('downsample'));
+
+% Exit button
+uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Exit','Position', [150 60 300 40], 'FontSize', 12, 'BackgroundColor', [0.7 0.3 0.3],'Callback', @(src, evt) close(hFig));
+
+% Help button
+uicontrol(hFig, 'Style', 'pushbutton', 'String', 'Help', ...
+    'Position', [450 520 100 40], 'FontSize', 12, 'BackgroundColor', [0.6 0.6 0.6],'Callback', @showHelp);
+
+%--- Nested Functions ---
     function selectImage(~, ~)
         [file, folder] = uigetfile({'*.png;*.jpg;*.jpeg;*.bmp;*.DNG','Image Files'});
         if isequal(file, 0), return; end
@@ -77,18 +76,20 @@ function jpeg_compressor_gui1
             Y  = double(ycb(:,:,1));
             Cb = double(ycb(:,:,2));
             Cr = double(ycb(:,:,3));
-            
+
             % Chroma resizing
             switch mode
-                case 'downsample'
-                    Cb = imresize(Cb, [floor(h/2) floor(w/2)], 'bilinear');
-                    Cr = imresize(Cr, [floor(h/2) floor(w/2)], 'bilinear');
-                    quality = 40; % Fixed quality for downsampling
-                case 'upsample'
-                    Cb = imresize(Cb, [h*2 w*2], 'bilinear');
-                    Cr = imresize(Cr, [h*2 w*2], 'bilinear');
-                    quality = 100; % Fixed quality for upsampling
+                case 'downsample'  % Apply 4:2:0
+                    Cb = imresize(Cb, 0.5, 'bilinear');  % Half in both dimensions
+                    Cr = imresize(Cr, 0.5, 'bilinear');
+                    quality = 40;
+
+                case 'upsample'  % Restore from 4:2:0 to original size
+                    Cb = imresize(Cb, [h, w], 'bilinear');  % Same size as Y
+                    Cr = imresize(Cr, [h, w], 'bilinear');
+                    quality = 100;
             end
+
 
             % Block DCT + quantization
             QY  = blockDCT(Y);
@@ -99,7 +100,7 @@ function jpeg_compressor_gui1
             [~, name, ~] = fileparts(filePath);
             outFile = fullfile(outputDir, sprintf('%s_%s.jpg', name, mode));
             imwrite(I, outFile, 'jpg', 'Quality', quality);
-            
+
             % Update preview & status
             I_disp = imresize(I, [250 NaN]);
             imshow(I_disp, 'Parent', hAx);
@@ -113,13 +114,13 @@ function jpeg_compressor_gui1
     function Qmat = blockDCT(channel)
         % JPEG luminance quant matrix
         Q = [16 11 10 16 24 40 51 61;
-             12 12 14 19 26 58 60 55;
-             14 13 16 24 40 57 69 56;
-             14 17 22 29 51 87 80 62;
-             18 22 37 56 68 109 103 77;
-             24 35 55 64 81 104 113 92;
-             49 64 78 87 103 121 120 101;
-             72 92 95 98 112 100 103 99];
+            12 12 14 19 26 58 60 55;
+            14 13 16 24 40 57 69 56;
+            14 17 22 29 51 87 80 62;
+            18 22 37 56 68 109 103 77;
+            24 35 55 64 81 104 113 92;
+            49 64 78 87 103 121 120 101;
+            72 92 95 98 112 100 103 99];
         [H, W] = size(channel);
         padH = mod(8-mod(H,8),8);
         padW = mod(8-mod(W,8),8);
@@ -137,10 +138,10 @@ function jpeg_compressor_gui1
 
     function showHelp(~, ~)
         helpMsg = sprintf(['JPEG Compressor Help:\n', ...
-                           '1. Select an image using the "Select Image" button.\n', ...
-                           '2. Choose to upsample or downsample the image and compress it.\n', ...
-                           '3. The compressed image will be saved in the specified output directory.\n', ...
-                           '4. Click "Exit" to close the application.']);
+            '1. Select an image using the "Select Image" button.\n', ...
+            '2. Choose to upsample or downsample the image and compress it.\n', ...
+            '3. The compressed image will be saved in the specified output directory.\n', ...
+            '4. Click "Exit" to close the application.']);
         msgbox(helpMsg, 'Help');
     end
 end
